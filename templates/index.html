@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampusBite 🍽️ – Order Your Lunch</title>
+  <meta name="description" content="Order canteen food from your classroom. Skip the queue, grab your token." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .glass { background: rgba(255,255,255,0.07); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.12); }
+    .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+    .btn-bounce:active { transform: scale(0.95); }
+    .badge-pulse { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+    #cart-sidebar { transition: transform 0.35s cubic-bezier(0.4,0,0.2,1); }
+    .qty-btn { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; cursor:pointer; transition:background 0.15s; }
+    .slide-in { animation: slideIn 0.4s ease; }
+    @keyframes slideIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+    .token-glow { box-shadow: 0 0 40px rgba(251,191,36,0.5), 0 0 80px rgba(251,191,36,0.2); }
+    .category-pill.active { background: #f97316; color: white; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { DEFAULT: '#f97316', dark: '#ea580c', light: '#fed7aa' },
+            surface: { DEFAULT: '#0f172a', card: '#1e293b', elevated: '#334155' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-surface text-white min-h-screen">
+
+<!-- ─── TOP NAV ─────────────────────────────────────────── -->
+<nav class="sticky top-0 z-40 glass border-b border-white/10 px-4 py-3">
+  <div class="max-w-5xl mx-auto flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl">🍽️</span>
+      <span class="font-bold text-lg tracking-tight">Campus<span class="text-brand">Bite</span></span>
+    </div>
+    <div id="nav-status" class="flex items-center gap-2 text-sm">
+      <span class="w-2 h-2 rounded-full bg-green-400 badge-pulse"></span>
+      <span class="text-green-400 font-medium">Orders Open</span>
+    </div>
+    <button id="cart-btn" onclick="openCart()" class="relative flex items-center gap-2 bg-brand hover:bg-brand-dark px-4 py-2 rounded-full font-semibold text-sm btn-bounce transition-colors">
+      🛒 Cart
+      <span id="cart-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">0</span>
+    </button>
+  </div>
+</nav>
+
+<!-- ─── CLOSED BANNER ────────────────────────────────────── -->
+<div id="closed-banner" class="hidden bg-red-900/40 border border-red-500/30 text-center py-4 px-4">
+  <p class="text-red-300 font-semibold">⏰ Ordering is now closed (after 12:00 PM). Come back tomorrow!</p>
+  <p class="text-red-400 text-sm">You can collect your order during the break: 12:45 PM – 1:45 PM</p>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- SCREEN 1: MENU                                           -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div id="screen-menu" class="screen active max-w-5xl mx-auto px-4 py-6">
+  <!-- Hero -->
+  <div class="text-center mb-8 slide-in">
+    <h1 class="text-3xl md:text-4xl font-extrabold mb-2">
+      Skip the queue 🚀
+    </h1>
+    <p class="text-slate-400 text-sm md:text-base">Order before 12:00 PM · Collect during your 12:45–1:45 break</p>
+  </div>
+
+  <!-- Category Filter -->
+  <div id="category-pills" class="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
+    <button onclick="filterCategory('All')" class="category-pill active flex-shrink-0 px-4 py-2 rounded-full bg-surface-card border border-white/10 text-sm font-medium hover:border-brand transition-colors">🍴 All</button>
+    <button onclick="filterCategory('Meal')" class="category-pill flex-shrink-0 px-4 py-2 rounded-full bg-surface-card border border-white/10 text-sm font-medium hover:border-brand transition-colors">🍛 Meals</button>
+    <button onclick="filterCategory('Snacks')" class="category-pill flex-shrink-0 px-4 py-2 rounded-full bg-surface-card border border-white/10 text-sm font-medium hover:border-brand transition-colors">🌯 Snacks</button>
+    <button onclick="filterCategory('Drinks')" class="category-pill flex-shrink-0 px-4 py-2 rounded-full bg-surface-card border border-white/10 text-sm font-medium hover:border-brand transition-colors">☕ Drinks</button>
+    <button onclick="filterCategory('Healthy')" class="category-pill flex-shrink-0 px-4 py-2 rounded-full bg-surface-card border border-white/10 text-sm font-medium hover:border-brand transition-colors">🍓 Healthy</button>
+  </div>
+
+  <!-- Menu Grid -->
+  <div id="menu-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- Cards injected by JS -->
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- SCREEN 2: CHECKOUT                                       -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div id="screen-checkout" class="screen max-w-xl mx-auto px-4 py-6">
+  <button onclick="showScreen('menu')" class="flex items-center gap-2 text-slate-400 hover:text-white mb-6 text-sm transition-colors">
+    ← Back to Menu
+  </button>
+  <h2 class="text-2xl font-bold mb-6">Your Order 🧾</h2>
+
+  <!-- Order Summary -->
+  <div class="bg-surface-card rounded-2xl p-4 mb-4 border border-white/10">
+    <h3 class="font-semibold text-slate-300 mb-3 text-sm uppercase tracking-wider">Items</h3>
+    <div id="checkout-items" class="space-y-2"></div>
+    <div class="border-t border-white/10 mt-3 pt-3 flex justify-between font-bold text-lg">
+      <span>Total</span>
+      <span class="text-brand" id="checkout-total">₹0</span>
+    </div>
+  </div>
+
+  <!-- Cutlery Option -->
+  <div class="bg-surface-card rounded-2xl p-4 mb-4 border border-white/10">
+    <label class="flex items-center gap-4 cursor-pointer">
+      <div class="relative">
+        <input type="checkbox" id="cutlery-checkbox" class="sr-only peer" />
+        <div class="w-11 h-6 bg-surface-elevated rounded-full peer peer-checked:bg-brand transition-colors"></div>
+        <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+      </div>
+      <div>
+        <p class="font-semibold">Include Cutlery 🍴</p>
+        <p class="text-slate-400 text-sm">Plates, spoons & napkins</p>
+      </div>
+    </label>
+  </div>
+
+  <!-- Student Details -->
+  <div class="bg-surface-card rounded-2xl p-4 mb-6 border border-white/10">
+    <h3 class="font-semibold text-slate-300 mb-3 text-sm uppercase tracking-wider">Your Details</h3>
+    <div class="space-y-3">
+      <div>
+        <label class="text-sm text-slate-400 mb-1 block">Full Name</label>
+        <input id="input-name" type="text" placeholder="e.g. Rahul Sharma" class="w-full bg-surface-elevated border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand transition-colors" />
+      </div>
+      <div>
+        <label class="text-sm text-slate-400 mb-1 block">College Roll Number <span class="text-brand">*</span></label>
+        <input id="input-roll" type="text" placeholder="e.g. 22CS0001 (8 digits)" maxlength="8" class="w-full bg-surface-elevated border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand transition-colors font-mono tracking-widest" />
+        <p id="roll-error" class="text-red-400 text-xs mt-1 hidden">Roll number must be exactly 8 digits (numbers only).</p>
+      </div>
+    </div>
+  </div>
+
+  <button onclick="proceedToPayment()" class="w-full bg-brand hover:bg-brand-dark py-4 rounded-2xl font-bold text-lg btn-bounce transition-colors">
+    Proceed to Payment →
+  </button>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- SCREEN 3: PAYMENT                                        -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div id="screen-payment" class="screen max-w-md mx-auto px-4 py-6 text-center">
+  <button onclick="showScreen('checkout')" class="flex items-center gap-2 text-slate-400 hover:text-white mb-6 text-sm transition-colors">
+    ← Back
+  </button>
+  <div class="bg-surface-card rounded-3xl p-6 border border-white/10">
+    <h2 class="text-2xl font-bold mb-1">Pay Now 💳</h2>
+    <p class="text-slate-400 text-sm mb-6">Scan the QR code and complete payment</p>
+
+    <!-- UPI QR Code (placeholder image with pattern) -->
+    <div class="mx-auto w-48 h-48 bg-white rounded-2xl flex items-center justify-center mb-4 shadow-xl">
+      <div class="text-center">
+        <p class="text-gray-800 text-xs font-mono">UPI QR CODE</p>
+        <!-- Simulated QR grid -->
+        <svg width="120" height="120" viewBox="0 0 120 120" class="mt-1">
+          <rect fill="#000" width="120" height="120"/><rect fill="#fff" x="4" y="4" width="112" height="112"/>
+          <rect fill="#000" x="8" y="8" width="36" height="36"/><rect fill="#fff" x="12" y="12" width="28" height="28"/><rect fill="#000" x="16" y="16" width="20" height="20"/>
+          <rect fill="#000" x="76" y="8" width="36" height="36"/><rect fill="#fff" x="80" y="12" width="28" height="28"/><rect fill="#000" x="84" y="16" width="20" height="20"/>
+          <rect fill="#000" x="8" y="76" width="36" height="36"/><rect fill="#fff" x="12" y="80" width="28" height="28"/><rect fill="#000" x="16" y="84" width="20" height="20"/>
+          <rect fill="#000" x="52" y="8" width="8" height="8"/><rect fill="#000" x="52" y="20" width="8" height="8"/><rect fill="#000" x="52" y="32" width="16" height="8"/>
+          <rect fill="#000" x="8" y="52" width="8" height="8"/><rect fill="#000" x="20" y="52" width="8" height="8"/><rect fill="#000" x="32" y="52" width="16" height="8"/>
+          <rect fill="#000" x="52" y="52" width="16" height="16"/><rect fill="#000" x="72" y="52" width="8" height="8"/><rect fill="#000" x="84" y="52" width="28" height="8"/>
+          <rect fill="#000" x="52" y="72" width="8" height="16"/><rect fill="#000" x="64" y="76" width="8" height="8"/><rect fill="#000" x="76" y="72" width="16" height="8"/>
+          <rect fill="#000" x="76" y="84" width="8" height="8"/><rect fill="#000" x="92" y="80" width="20" height="8"/><rect fill="#000" x="100" y="72" width="8" height="8"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="bg-surface-elevated rounded-xl px-4 py-3 mb-4 flex justify-between items-center">
+      <span class="text-slate-400 text-sm">UPI ID</span>
+      <span class="font-mono font-semibold text-sm">canteen@upi</span>
+    </div>
+    <div class="bg-surface-elevated rounded-xl px-4 py-3 mb-6 flex justify-between items-center">
+      <span class="text-slate-400 text-sm">Amount</span>
+      <span class="font-bold text-brand text-xl" id="payment-amount">₹0</span>
+    </div>
+
+    <p class="text-slate-400 text-xs mb-4">After paying, click the button below to confirm your order.</p>
+    <button id="confirm-payment-btn" onclick="confirmPayment()" class="w-full bg-green-500 hover:bg-green-600 py-4 rounded-2xl font-bold text-lg btn-bounce transition-colors">
+      ✅ I Have Paid
+    </button>
+    <p id="payment-error" class="text-red-400 text-sm mt-3 hidden"></p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- SCREEN 4: SUCCESS / TOKEN                                -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div id="screen-success" class="screen max-w-md mx-auto px-4 py-10 text-center">
+  <div class="slide-in">
+    <div class="text-6xl mb-4">🎉</div>
+    <h2 class="text-2xl font-bold mb-2">Order Placed!</h2>
+    <p class="text-slate-400 mb-8">Your food is being prepared. Come collect it after 12:45 PM.</p>
+
+    <div class="bg-surface-card rounded-3xl p-8 border border-white/10 token-glow mb-6">
+      <p class="text-slate-400 text-sm uppercase tracking-widest mb-2">Your Token Number</p>
+      <div class="text-8xl font-extrabold text-amber-400 mb-2" id="token-display">#???</div>
+      <p class="text-slate-400 text-sm">Show this to the canteen staff</p>
+    </div>
+
+    <div class="bg-surface-card rounded-2xl p-4 border border-white/10 text-left mb-6">
+      <p class="text-slate-400 text-xs mb-2 uppercase tracking-wider">Order Summary</p>
+      <p class="font-medium text-sm" id="success-items">—</p>
+      <p class="text-slate-400 text-sm mt-1" id="success-cutlery"></p>
+    </div>
+
+    <button onclick="orderAnother()" class="w-full bg-surface-card hover:bg-surface-elevated border border-white/10 py-3 rounded-2xl font-semibold text-sm transition-colors">
+      ← Order Something Else
+    </button>
+  </div>
+</div>
+
+<!-- ─── CART SIDEBAR / OVERLAY ──────────────────────────── -->
+<div id="cart-overlay" class="hidden fixed inset-0 bg-black/60 z-50" onclick="closeCart()"></div>
+<div id="cart-sidebar" class="fixed top-0 right-0 h-full w-full max-w-sm bg-surface-card border-l border-white/10 z-50 flex flex-col translate-x-full p-5">
+  <div class="flex items-center justify-between mb-5">
+    <h3 class="text-lg font-bold">Your Cart 🛒</h3>
+    <button onclick="closeCart()" class="text-slate-400 hover:text-white text-xl transition-colors">✕</button>
+  </div>
+
+  <div id="cart-items-list" class="flex-1 overflow-y-auto space-y-3">
+    <p class="text-slate-400 text-sm text-center py-8">Your cart is empty 🍽️</p>
+  </div>
+
+  <div class="border-t border-white/10 pt-4 mt-4">
+    <div class="flex justify-between text-base font-bold mb-4">
+      <span>Total</span>
+      <span class="text-brand" id="cart-total">₹0</span>
+    </div>
+    <button onclick="goToCheckout()" id="checkout-btn" class="w-full bg-brand hover:bg-brand-dark py-4 rounded-2xl font-bold transition-colors btn-bounce disabled:opacity-50 disabled:cursor-not-allowed">
+      Checkout →
+    </button>
+  </div>
+</div>
+
+<!-- ─── SCRIPTS ──────────────────────────────────────────── -->
+<script>
+  // ── STATE ─────────────────────────────────────────────────
+  let menuItems = [];
+  let cart = {};        // { item_id: { item, qty } }
+  let currentFilter = 'All';
+  let orderingOpen = true;
+  let currentOrder = null;
+
+  // ── INIT ──────────────────────────────────────────────────
+  async function init() {
+    await checkStatus();
+    await loadMenu();
+    renderMenu();
+    setInterval(checkStatus, 60000); // check every minute
+  }
+
+  async function checkStatus() {
+    try {
+      const res = await fetch('/api/status');
+      const data = await res.json();
+      orderingOpen = data.ordering_open;
+      updateStatusUI();
+    } catch(e) { console.warn('Status check failed', e); }
+  }
+
+  function updateStatusUI() {
+    const banner = document.getElementById('closed-banner');
+    const navStatus = document.getElementById('nav-status');
+    const checkoutBtn = document.getElementById('checkout-btn');
+    if (!orderingOpen) {
+      banner.classList.remove('hidden');
+      navStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-400"></span><span class="text-red-400 font-medium">Orders Closed</span>`;
+      if (checkoutBtn) checkoutBtn.disabled = true;
+    } else {
+      banner.classList.add('hidden');
+      navStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-400 badge-pulse"></span><span class="text-green-400 font-medium">Orders Open</span>`;
+      if (checkoutBtn) checkoutBtn.disabled = false;
+    }
+  }
+
+  async function loadMenu() {
+    try {
+      const res = await fetch('/api/menu');
+      const data = await res.json();
+      menuItems = data.items;
+    } catch(e) {
+      console.error('Failed to load menu', e);
+    }
+  }
+
+  // ── MENU RENDERING ────────────────────────────────────────
+  function filterCategory(cat) {
+    currentFilter = cat;
+    document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
+    event.target.classList.add('active');
+    renderMenu();
+  }
+
+  function renderMenu() {
+    const grid = document.getElementById('menu-grid');
+    const filtered = currentFilter === 'All' ? menuItems : menuItems.filter(i => i.category === currentFilter);
+    grid.innerHTML = filtered.map(item => `
+      <div class="bg-surface-card rounded-2xl p-4 border border-white/10 card-hover slide-in flex flex-col" data-category="${item.category}">
+        <div class="flex items-start justify-between mb-3">
+          <span class="text-4xl">${item.emoji}</span>
+          <span class="text-xs bg-surface-elevated px-2 py-1 rounded-full text-slate-400">${item.category}</span>
+        </div>
+        <h3 class="font-semibold text-base mb-1">${item.name}</h3>
+        <p class="text-slate-400 text-sm flex-1 mb-3">${item.description}</p>
+        <div class="flex items-center justify-between">
+          <span class="text-brand font-bold text-lg">₹${item.price}</span>
+          ${cartQtyControl(item)}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function cartQtyControl(item) {
+    const inCart = cart[item.id];
+    if (inCart && inCart.qty > 0) {
+      return `
+        <div class="flex items-center gap-3">
+          <button onclick="changeQty(${item.id}, -1)" class="qty-btn bg-brand-light text-orange-800 hover:bg-brand">−</button>
+          <span class="font-bold w-5 text-center">${inCart.qty}</span>
+          <button onclick="changeQty(${item.id}, 1)" class="qty-btn bg-brand hover:bg-brand-dark">+</button>
+        </div>`;
+    }
+    return `<button onclick="addToCart(${item.id})" class="bg-brand hover:bg-brand-dark px-4 py-2 rounded-xl text-sm font-semibold btn-bounce transition-colors">Add</button>`;
+  }
+
+  // ── CART OPERATIONS ───────────────────────────────────────
+  function addToCart(itemId) {
+    const item = menuItems.find(i => i.id === itemId);
+    if (!item) return;
+    if (!cart[itemId]) cart[itemId] = { item, qty: 0 };
+    cart[itemId].qty++;
+    updateCartUI();
+    renderMenu();
+  }
+
+  function changeQty(itemId, delta) {
+    if (!cart[itemId]) return;
+    cart[itemId].qty += delta;
+    if (cart[itemId].qty <= 0) delete cart[itemId];
+    updateCartUI();
+    renderMenu();
+  }
+
+  function updateCartUI() {
+    const totalItems = Object.values(cart).reduce((s, v) => s + v.qty, 0);
+    const totalPrice = Object.values(cart).reduce((s, v) => s + v.item.price * v.qty, 0);
+
+    // Badge
+    const badge = document.getElementById('cart-badge');
+    if (totalItems > 0) {
+      badge.textContent = totalItems;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+
+    // Cart total label
+    document.getElementById('cart-total').textContent = `₹${totalPrice}`;
+
+    // Cart items list
+    const listEl = document.getElementById('cart-items-list');
+    if (totalItems === 0) {
+      listEl.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">Your cart is empty 🍽️</p>';
+    } else {
+      listEl.innerHTML = Object.values(cart).map(({ item, qty }) => `
+        <div class="flex items-center justify-between bg-surface-elevated rounded-xl px-3 py-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">${item.emoji}</span>
+            <div>
+              <p class="text-sm font-medium leading-none">${item.name}</p>
+              <p class="text-xs text-slate-400 mt-0.5">₹${item.price} × ${qty}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="changeQty(${item.id}, -1)" class="qty-btn bg-surface-card hover:bg-red-900/40 text-slate-300">−</button>
+            <span class="text-sm font-bold w-4 text-center">${qty}</span>
+            <button onclick="changeQty(${item.id}, 1)" class="qty-btn bg-brand hover:bg-brand-dark text-white">+</button>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
+  // ── CART SIDEBAR TOGGLE ───────────────────────────────────
+  function openCart() {
+    document.getElementById('cart-overlay').classList.remove('hidden');
+    document.getElementById('cart-sidebar').classList.remove('translate-x-full');
+  }
+  function closeCart() {
+    document.getElementById('cart-overlay').classList.add('hidden');
+    document.getElementById('cart-sidebar').classList.add('translate-x-full');
+  }
+
+  // ── SCREEN NAVIGATION ─────────────────────────────────────
+  function showScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(`screen-${name}`).classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  function goToCheckout() {
+    if (!orderingOpen) { alert("Sorry, ordering has closed at 12:00 PM."); return; }
+    const total = Object.values(cart).reduce((s, v) => s + v.item.price * v.qty, 0);
+    if (total === 0) return;
+
+    closeCart();
+
+    // Fill checkout summary
+    const itemsEl = document.getElementById('checkout-items');
+    itemsEl.innerHTML = Object.values(cart).map(({ item, qty }) => `
+      <div class="flex justify-between text-sm">
+        <span class="text-slate-300">${item.emoji} ${item.name} × ${qty}</span>
+        <span class="font-medium">₹${item.price * qty}</span>
+      </div>
+    `).join('');
+    document.getElementById('checkout-total').textContent = `₹${total}`;
+    showScreen('checkout');
+  }
+
+  // ── PROCEED TO PAYMENT ─────────────────────────────────────
+  function proceedToPayment() {
+    const name = document.getElementById('input-name').value.trim();
+    const roll = document.getElementById('input-roll').value.trim();
+    const rollError = document.getElementById('roll-error');
+
+    if (!name) { alert("Please enter your name."); return; }
+
+    const rollRegex = /^\d{8}$/;
+    if (!rollRegex.test(roll)) {
+      rollError.classList.remove('hidden');
+      return;
+    }
+    rollError.classList.add('hidden');
+
+    const total = Object.values(cart).reduce((s, v) => s + v.item.price * v.qty, 0);
+    document.getElementById('payment-amount').textContent = `₹${total}`;
+    document.getElementById('payment-error').classList.add('hidden');
+    showScreen('payment');
+  }
+
+  // ── CONFIRM PAYMENT (MOCK) ────────────────────────────────
+  async function confirmPayment() {
+    const btn = document.getElementById('confirm-payment-btn');
+    const errEl = document.getElementById('payment-error');
+    btn.disabled = true;
+    btn.textContent = '⏳ Placing order...';
+
+    const name = document.getElementById('input-name').value.trim();
+    const roll = document.getElementById('input-roll').value.trim();
+    const cutlery = document.getElementById('cutlery-checkbox').checked;
+
+    const items = Object.values(cart).map(({ item, qty }) => ({ item_id: item.id, quantity: qty }));
+
+    try {
+      const res = await fetch('/api/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roll_number: roll, student_name: name, items, cutlery })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        errEl.textContent = data.detail || 'Order failed. Please try again.';
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = '✅ I Have Paid';
+        return;
+      }
+      currentOrder = data;
+      showSuccessScreen(data);
+    } catch(e) {
+      errEl.textContent = 'Network error. Please check your connection.';
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = '✅ I Have Paid';
+    }
+  }
+
+  function showSuccessScreen(data) {
+    document.getElementById('token-display').textContent = `#${data.token}`;
+    document.getElementById('success-items').textContent = data.items;
+    document.getElementById('success-cutlery').textContent = data.cutlery ? '🍴 Cutlery included' : '🥡 No cutlery';
+    cart = {};
+    updateCartUI();
+    showScreen('success');
+  }
+
+  function orderAnother() {
+    renderMenu();
+    showScreen('menu');
+  }
+
+  init();
+</script>
+</body>
+</html>
