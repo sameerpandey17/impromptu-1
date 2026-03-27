@@ -591,13 +591,24 @@ export default function App() {
                 )}
               </div>
 
-              <button
-                onClick={() => { go("menu"); }}
-                className="w-full py-3 rounded-2xl font-semibold text-sm transition-colors"
-                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
-              >
-                ← Order Something Else
-              </button>
+              <div className="flex flex-col gap-3">
+                <a
+                  href="http://localhost:8000/now-serving"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-4 rounded-2xl font-bold text-center transition-all active:scale-95 hover:opacity-90 shadow-[0_0_20px_rgba(59,130,246,0.2)]"
+                  style={{ background: "var(--secondary)", color: "#000" }}
+                >
+                  Track Order !
+                </a>
+                <button
+                  onClick={() => { go("menu"); }}
+                  className="w-full py-3 rounded-2xl font-semibold text-sm transition-colors"
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
+                >
+                  ← Order Something Else
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

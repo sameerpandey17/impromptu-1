@@ -165,9 +165,7 @@ def get_current_time() -> datetime.time:
 
 
 def is_ordering_open() -> bool:
-    now = get_current_time()
-    cutoff = datetime.time(ORDER_CUTOFF_HOUR, ORDER_CUTOFF_MINUTE)
-    return now < cutoff
+    return True
 
 
 def generate_token() -> str:
